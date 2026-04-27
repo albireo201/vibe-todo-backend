@@ -9,6 +9,15 @@ const MONGODB_URI =
   process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/todoapp';
 const todoRoutes = require('./routes/todoRoutes');
 
+function requireDb(req, res, next) {
+  if (mongoose.connection.readyState === 1) return next();
+  res.status(503).json({
+    error: '데이터베이스에 연결되지 않았습니다.',
+    hint:
+      'Heroku Settings → Config Vars에 MONGODB_URI를 설정하고, MongoDB Atlas Network Access에서 IP 허용(예: 0.0.0.0/0)을 확인하세요.',
+  });
+}
+
 // CORS 설정
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -32,7 +41,25 @@ app.get('/todoapp', (_req, res) => {
   res.redirect(302, '/todos');
 });
 
-app.use('/todos', todoRoutes);
+app.use('/todos', requireDb, todoRoutes);
+
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: mongoose.connection.readyState === 1,
+    mongoReadyState: mongoose.connection.readyState,
+    hasMongodbUriEnv: Boolean(process.env.MONGODB_URI),
+  });
+});
+
+if (process.env.DYNO && !process.env.MONGODB_URI) {
+  console.warn(
+    '[Heroku] MONGODB_URI Config Var가 없습니다. Atlas 연결 문자열을 추가하세요.',
+  );
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 mongoose
   .connect(MONGODB_URI, {
@@ -41,11 +68,8 @@ mongoose
   })
   .then(() => {
     console.log('연결성공');
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-    });
   })
   .catch((error) => {
-    console.error('MongoDB 연결 실패:', error);
-    process.exit(1);
+    console.error('MongoDB 연결 실패:', error.message);
+    console.error(error);
   });
