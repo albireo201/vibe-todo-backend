@@ -3,6 +3,15 @@ const Todo = require('../models/Todo');
 
 const router = express.Router();
 
+function serverError(res, logLabel, error, clientMessage) {
+  console.error(logLabel, error);
+  const body = { error: clientMessage };
+  if (process.env.EXPOSE_API_ERRORS === '1') {
+    body.details = error.message;
+  }
+  res.status(500).json(body);
+}
+
 router.post('/', async (req, res) => {
   try {
     const { content } = req.body;
@@ -15,18 +24,16 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(todo);
   } catch (error) {
-    console.error('할일 저장 실패:', error);
-    res.status(500).json({ error: '할일 저장 중 오류가 발생했습니다.' });
+    serverError(res, '할일 저장 실패:', error, '할일 저장 중 오류가 발생했습니다.');
   }
 });
 
 router.get('/', async (req, res) => {
   try {
-    const todos = await Todo.find().sort({ createdAt: -1 });
+    const todos = await Todo.find().sort({ createdAt: -1 }).lean();
     res.json(todos);
   } catch (error) {
-    console.error('할일 조회 실패:', error);
-    res.status(500).json({ error: '할일 조회 중 오류가 발생했습니다.' });
+    serverError(res, '할일 조회 실패:', error, '할일 조회 중 오류가 발생했습니다.');
   }
 });
 
@@ -61,8 +68,7 @@ router.put('/:id', async (req, res) => {
 
     res.json(updatedTodo);
   } catch (error) {
-    console.error('할일 수정 실패:', error);
-    res.status(500).json({ error: '할일 수정 중 오류가 발생했습니다.' });
+    serverError(res, '할일 수정 실패:', error, '할일 수정 중 오류가 발생했습니다.');
   }
 });
 
@@ -77,8 +83,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: '할일이 삭제되었습니다.' });
   } catch (error) {
-    console.error('할일 삭제 실패:', error);
-    res.status(500).json({ error: '할일 삭제 중 오류가 발생했습니다.' });
+    serverError(res, '할일 삭제 실패:', error, '할일 삭제 중 오류가 발생했습니다.');
   }
 });
 
