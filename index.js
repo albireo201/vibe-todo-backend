@@ -5,7 +5,8 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URI;
+const MONGODB_URI =
+  process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/todoapp';
 const todoRoutes = require('./routes/todoRoutes');
 
 // CORS 설정
@@ -35,7 +36,7 @@ mongoose
   })
   .then(() => {
     console.log('연결성공');
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
