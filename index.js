@@ -27,6 +27,11 @@ app.get('/', (req, res) => {
   res.send('Todo backend is running.');
 });
 
+// Mongo URI의 DB 이름(todoapp)과 헷갈리는 경우 대비 — 실제 API는 /todos
+app.get('/todoapp', (_req, res) => {
+  res.redirect(302, '/todos');
+});
+
 app.use('/todos', todoRoutes);
 
 mongoose
